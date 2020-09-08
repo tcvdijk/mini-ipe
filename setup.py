@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="miniipe-tvd",
-    version="0.1.0",
+    version="0.1.1",
     author="Thomas van Dijk",
     author_email="tvdmaps@gmail.com",
     description="An easy, no-dependencies package for writing IPE files from Python.",
