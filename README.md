@@ -18,8 +18,8 @@ doc.import_stylefile()
 
 doc.add_layer('alpha')
 
-p = [(0,0), (100,100), (200,0)]
-doc.path( p, color='black', layer='alpha')
+ps = [(0,0), (100,100), (200,0)]
+doc.add_path( ps, color='black', layer='alpha')
 
-doc.write('test.ipe')
+doc.write('simple.ipe')
 ```
