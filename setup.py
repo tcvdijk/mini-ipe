@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="miniipe-tvd",
+    name="miniipe",
     version="0.1.4",
     author="Thomas van Dijk",
     author_email="tvdmaps@gmail.com",
