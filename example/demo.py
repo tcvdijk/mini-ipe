@@ -48,4 +48,4 @@ for p in points[::25]:
     doc.add_text( p, 'hallo wereld', stroke='red' )
 
 # Clean up internal data structures and write file
-doc.write('test.ipe')
+doc.write('demo.ipe')
