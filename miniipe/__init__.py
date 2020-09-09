@@ -84,13 +84,16 @@ class Document(object):
         e.text = text
         return e
 
-
-    def write(self,filename):
+    def prepare_output(self):
         # sort the <ipestyle>s before the <page>s
         ipe_order = lambda e: {'ipestyle': 1, 'page': 2}.get( e.tag, 3 )
         self.ipe[:] = sorted(self.ipe, key=ipe_order)
         # sort the page tag: layer < view < content
         page_order = lambda e: {'layer': 1, 'view': 2}.get( e.tag, 3 )
         self.page[:] = sorted(self.page, key=page_order)
-        # write out
-        ElementTree(self.ipe).write(filename, encoding='utf-8', xml_declaration=True)
+    def tostring(self):
+        self.prepare_output()
+        return ET.tostring(self.ipe,encoding='unicode', xml_declaration=True, method='xml')
+    def write(self,filename):
+        self.prepare_output()
+        ElementTree(self.ipe).write(filename, encoding='unicode', xml_declaration=True)
