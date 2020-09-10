@@ -3,6 +3,8 @@ from os.path import expanduser
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment, tostring
 
+from math import sin, cos
+
 class Document(object):
     ipe = None
     style = None
@@ -74,13 +76,16 @@ class Document(object):
         if layer is not None: e.set('layer',layer)
         return e
 
-    def add_text(self,pos,text,stroke='black',type='label',valign='baseline',layer=None):
+    def add_text(self,pos,text,stroke='black',type='label',size='normal',valign='baseline',halign='left',layer=None,matrix=None):
         e = SubElement(self.page,'text')
         e.set('pos', str(pos[0])+' '+str(pos[1]))
         e.set('stroke', stroke)
         e.set('type', type)
+        e.set('size', size)
+        e.set('halign', halign)
         e.set('valign', valign)
         if layer is not None: e.set('layer',layer)
+        if matrix is not None: e.set('matrix',matrix.tostring())
         e.text = text
         return e
 
@@ -97,3 +102,24 @@ class Document(object):
     def write(self,filename):
         self.prepare_output()
         ElementTree(self.ipe).write(filename, encoding='unicode', xml_declaration=True)
+
+class Matrix(object):
+    m11 = 1; m12 = 0
+    m21 = 0; m22 = 1
+    t1  = 0; t2  = 0
+    def __init__(self,m11,m12,m21,m22,t1,t2):
+        self.m11 = m11
+        self.m12 = m12
+        self.m21 = m21
+        self.m22 = m22
+        self.t1 = t1
+        self.t2 = t2
+    def tostring(self):
+        return str(self.m11)+" "+str(self.m21)+" " \
+              +str(self.m12)+" "+str(self.m22)+" " \
+              +str(self.t1) +" "+str(self.t2)
+
+def Rotate(a):
+    return Matrix(cos(a),-sin(a),sin(a),cos(a), 0, 0)
+def RotateAt(p,a):
+    return Matrix(cos(a),-sin(a),sin(a),cos(a), p[0], p[1])
