@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="miniipe",
-    version="0.1.8",
+    version="0.2.0",
     author="Thomas van Dijk",
     author_email="tvdmaps@gmail.com",
     description="An easy, no-dependencies package for writing IPE files from Python.",

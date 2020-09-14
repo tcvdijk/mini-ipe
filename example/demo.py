@@ -1,4 +1,4 @@
-from miniipe import Document, RotateAt
+from miniipe import Document, RotateAt, Matrix, polyline, ellipse
 
 # Make a miniipe.Document
 doc = Document()
@@ -12,7 +12,7 @@ doc.add_layout( page=(620,850) )
 
 # Make a layer
 doc.add_layer('alpha')
-doc.add_text( (64,768), 'Hello, this is miniipe!', size='Huge' )
+doc.text( (64,768), 'Hello, this is miniipe!', size='Huge' )
 
 
 # Plot a function
@@ -20,13 +20,13 @@ doc.add_layer('plot')
 from math import sin, cos, atan2, pi
 def f(x): return 400 + x*sin(x/30)
 points = [ (x,f(x)) for x in range(500) ]
-doc.add_path( points, color='black', layer='plot' )
+doc.path( polyline(points), stroke='black', layer='plot' )
 
 # Place a symbol every so many points
 stride = 40
 doc.add_layer('points')
 for p in points[::stride]:
-    doc.add_symbol(p,layer='points')
+    doc.symbol(p,layer='points')
 
 # Draw a Koch fractal between them
 def pairs(xs): return zip(xs[0::],xs[1::])
@@ -49,20 +49,28 @@ snow = points[::stride] + points[-1:]
 while len(snow)<2500:
     snow = koch(snow)
 doc.add_layer('fractal')
-doc.add_path( snow, color='blue', layer='fractal')
+doc.path( polyline(snow), stroke='blue', layer='fractal')
 
 # Add some text at the points
 doc.add_layer('labels')
+doc.add_layer('circles')
 for i,p in enumerate(points[::stride]):
     x = p[0]
     deriv = sin(x/30)+x*cos(x/30)/30
     angle = atan2(deriv,1)
-    doc.add_text( (0,5), str(i),
-                  stroke='red',
-                  halign='center',
-                  valign='bottom',
-                  matrix=RotateAt(p,angle),
-                  layer='labels' )
+    doc.path( ellipse(Matrix(10,0,0,15,0,7.5)),
+              stroke='darkgreen',
+              pen='fat',
+              fill='yellow',
+              opacity='50%',
+              matrix=RotateAt(p,angle),
+              layer='circles' )
+    doc.text( (0,5), str(i),
+              stroke='red',
+              halign='center',
+              valign='bottom',
+              matrix=RotateAt(p,angle),
+              layer='labels' )
 
 # Clean up internal data structures and write file
 doc.write('demo.ipe')
