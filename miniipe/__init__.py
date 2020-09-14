@@ -11,6 +11,8 @@ class Document(object):
     layout = None
     page = None
 
+    # Constructor
+
     def __init__(self):
         # base document
         self.ipe = Element('ipe')
@@ -22,6 +24,7 @@ class Document(object):
         # page, layer and view
         self.page = SubElement(self.ipe, 'page')
 
+    # Style things
 
     def import_stylefile(self,filename=None):
         if filename is None:
@@ -38,15 +41,65 @@ class Document(object):
         return style
 
     def add_layout(self, origin=(0,0), page=(612,792), frame=None, style=None):
-        if frame is None:
-            frame = page
-        if style is None:
-            style = self.style
-        layout = SubElement(self.style,'layout')
+        if frame is None: frame = page
+        if style is None: style = self.style
+        layout = SubElement(style,'layout')
         layout.set('paper',str(page[0])+' '+str(page[1]))
         layout.set('origin',str(origin[0])+' '+str(origin[1]))
         layout.set('frame',str(frame[0])+' '+str(frame[1]))
         return layout
+
+    def add_symbol(self,name,style=None):
+        if style is None: style=self.style
+        symbol = SubElement('symbol',style)
+        symbol.set('name',name)
+        return symbol
+
+    def add_color_rgb(self,name,r,g,b,style=None):
+        return self.add_color(name,str(r)+' '+str(g)+' '+str(b),style)
+    def add_color(self,name,value,style=None):
+        if style is None: style = self.style
+        color = SubElement(style, 'color')
+        color.set('name',name)
+        color.set('value',value)
+        return color
+
+    def add_dashstyle(self,name,value,style=None):
+        if style is None: style = self.style
+        dashstyle = SubElement(style,'dashstyle')
+        dashstyle.set('name',name)
+        dashstyle.set('value',value)
+        return dashstyle
+
+    def add_opacity(self,name,value):
+        if style is None: style = self.style
+        opacity = SubElement(style,'opacity')
+        opacity.set('name',name)
+        opacity.set('value',str(value))
+        return opacity
+
+    def add_textsize(self,name,value,style=None):
+        if style is None: style = self.style
+        textsize = SubElement(style,'textsize')
+        textsize.set('name',name)
+        textsize.set('value',value)
+        return textsize
+
+    def add_tiling(self,name,angle,step,width,style=None):
+        if style is None: style = self.style
+        tiling = SubElement(style,'tiling')
+        tiling.set('name',name)
+        tiling.set('angle',str(angle))
+        tiling.set('step',str(step))
+        tiling.set('width',str(width))
+        return tiling
+
+    def add_latex_preamble(self,latex):
+        preamble = SubElement(self.ipe,'preamble')
+        preamble.text = latex
+        return preamble
+
+    # Layer and view things
 
     def add_layer(self,name):
         layer = SubElement(self.page,'layer')
@@ -59,39 +112,52 @@ class Document(object):
         view.set('active',active)
         return view
 
-    def add_path(self,points,color='black',layer=None):
-        e = SubElement(self.page,'path')
-        e.set('stroke',color)
+    # Drawing things
+
+    def path(self,instructions,matrix=None,stroke='black',fill=None,pen=None, dash=None, arrow=None, rarrow=None, opacity=None, layer=None,closed=False,parent=None):
+        if parent is None: parent = self.page
+        e = SubElement(parent,'path')
+        e.set('stroke',stroke)
+        if arrow is not None: e.set('arrow',arrow)
+        if dash is not None: e.set('dash',dash)
+        if fill is not None: e.set('fill',fill)
         if layer is not None: e.set('layer',layer)
-        instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1]), lambda _: 'l' ] ]
-        e.text = ' '.join(instructions)
+        if matrix is not None: e.set('matrix',matrix.tostring())
+        if opacity is not None: e.set('opacity',opacity)
+        if pen is not None: e.set('pen',pen)
+        if rarrow is not None: e.set('rarrow',rarrow)
+        e.text = instructions
         return e
 
-    def add_symbol(self,pos,name='mark/disk(sx)',stroke='black',size='normal',layer=None):
+    def symbol(self,pos,name='mark/disk(sx)',stroke='black',size='normal',matrix=None,layer=None):
         e = SubElement(self.page,'use')
         e.set('name', name)
         e.set('pos', str(pos[0])+' '+str(pos[1]))
         e.set('size', size)
         e.set('stroke',stroke)
         if layer is not None: e.set('layer',layer)
+        if matrix is not None: e.set('matrix',matrix.tostring())
         return e
 
-    def add_text(self,pos,text,stroke='black',type='label',size='normal',valign='baseline',halign='left',layer=None,matrix=None):
-        e = SubElement(self.page,'text')
+    def text(self,pos,text,stroke='black',type='label',size='normal',valign='baseline',halign='left',layer=None,matrix=None,parent=None):
+        if parent is None: parent = self.page
+        e = SubElement(parent,'text')
         e.set('pos', str(pos[0])+' '+str(pos[1]))
+        e.set('halign', halign)
+        e.set('size', size)
         e.set('stroke', stroke)
         e.set('type', type)
-        e.set('size', size)
-        e.set('halign', halign)
         e.set('valign', valign)
         if layer is not None: e.set('layer',layer)
         if matrix is not None: e.set('matrix',matrix.tostring())
         e.text = text
         return e
 
+    # Output methods
+
     def prepare_output(self):
         # sort the <ipestyle>s before the <page>s
-        ipe_order = lambda e: {'ipestyle': 1, 'page': 2}.get( e.tag, 3 )
+        ipe_order = lambda e: {'preamble': 1, 'ipestyle': 2, 'page': 3}.get( e.tag, 4 )
         self.ipe[:] = sorted(self.ipe, key=ipe_order)
         # sort the page tag: layer < view < content
         page_order = lambda e: {'layer': 1, 'view': 2}.get( e.tag, 3 )
@@ -102,6 +168,24 @@ class Document(object):
     def write(self,filename):
         self.prepare_output()
         ElementTree(self.ipe).write(filename, encoding='unicode', xml_declaration=True)
+
+# Path instructions
+
+def polygon(points):
+    return polyline(points,True)
+
+def polyline(points,closed=False):
+    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1]), lambda _: 'l' ] ]
+    if closed: instructions = instructions + ['h']
+    return ' '.join(instructions)
+
+def circle(center,radius):
+    return ellipse( Matrix(radius,0,0,radius,center[0],center[1]) )
+
+def ellipse(matrix):
+    return matrix.tostring() + ' e'
+
+# Helper for matrices. Right now it's just a little hack to make rotated text easy.
 
 class Matrix(object):
     m11 = 1; m12 = 0
