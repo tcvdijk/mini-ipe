@@ -1,19 +1,15 @@
+# Demonstrates various features in one drawing.
+
 from miniipe import Document, RotateAt, Matrix, polyline, ellipse
 
 # Make a miniipe.Document
 doc = Document()
-
-# You need a stylefile. You could give the filename of your own
-# stylefile as argument, or if you give # no argument, this method
-# tries to load ~/.ipe/styles/basic.isy
 doc.import_stylefile()
-
 doc.add_layout( page=(620,850) )
-
-# Make a layer
 doc.add_layer('alpha')
-doc.text( (64,768), 'Hello, this is miniipe!', size='Huge' )
 
+# Text
+doc.text( (64,768), 'Hello, this is miniipe!', size='Huge' )
 
 # Plot a function
 doc.add_layer('plot')
@@ -23,9 +19,9 @@ points = [ (x,f(x)) for x in range(500) ]
 doc.path( polyline(points), stroke='black', layer='plot' )
 
 # Place a symbol every so many points
-stride = 40
+fewer_points = points[::40]
 doc.add_layer('points')
-for p in points[::stride]:
+for p in fewer_points:
     doc.symbol(p,layer='points')
 
 # Draw a Koch fractal between them
@@ -45,7 +41,7 @@ def koch(ps):
                             , lambda pp: lerp(pp[0],pp[1],0.3)
                             )]
                             
-snow = points[::stride] + points[-1:]
+snow = fewer_points + points[-1:]
 while len(snow)<2500:
     snow = koch(snow)
 doc.add_layer('fractal')
@@ -54,7 +50,7 @@ doc.path( polyline(snow), stroke='blue', layer='fractal')
 # Add some text at the points
 doc.add_layer('labels')
 doc.add_layer('circles')
-for i,p in enumerate(points[::stride]):
+for i,p in enumerate(fewer_points):
     x = p[0]
     deriv = sin(x/30)+x*cos(x/30)/30
     angle = atan2(deriv,1)

@@ -216,6 +216,9 @@ class Matrix(object):
                        self.m21 * other.m11 + self.m22 * other.m21,   self.m21 * other.m12 + self.m22 * other.m22,
                        self.m11 * other.t1  + self.m12 * other.t2 + self.t1,
                        self.m21 * other.t1  + self.m22 * other.t2 + self.t2 )
+    def transform(self,p):
+        x = p[0]; y = p[1]
+        return ( self.m11*x + self.m12*y + self.t1, self.m21*x + self.m22*y + self.t2 )
     def tostring(self):
         return str(self.m11)+' '+str(self.m21)+' '+str(self.m12)+' '+str(self.m22)+' '+str(self.t1)+' '+str(self.t2)
 
