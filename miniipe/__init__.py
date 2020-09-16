@@ -179,13 +179,22 @@ def polyline(points,closed=False):
     if closed: instructions = instructions + ['h']
     return ' '.join(instructions)
 
+def splinegon(points):
+    instructions = [ f(p) for p in points for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['u']
+    return ' '.join(instructions)
+
+def spline(points):
+    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['c']
+    return ' '.join(instructions)
+    
 def circle(center,radius):
     return ellipse( Matrix(radius,0,0,radius,center[0],center[1]) )
 
 def ellipse(matrix):
     return matrix.tostring() + ' e'
 
-# Helper for matrices. Right now it's just a little hack to make rotated text easy.
+# Helper class for matrices.
+# Matrix multiplication with operator @
 
 class Matrix(object):
     m11 = 1; m12 = 0
