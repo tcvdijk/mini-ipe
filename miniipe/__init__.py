@@ -171,6 +171,11 @@ class Document(object):
 
 # Path instructions
 
+def rectangle(p,size,centered=False):
+    if centered:
+        p = ( p[0]-size[0]/2, p[1]-size[1]/2 )
+    return polygon( [p,(p[0],p[1]+size[1]),(p[0]+size[0],p[1]+size[1]),(p[0]+size[0],p[1])] )
+
 def polygon(points):
     return polyline(points,True)
 
@@ -194,6 +199,25 @@ def cardinal_spline(points,tension=0.5):
 def circle(center,radius):
     return ellipse( Matrix(radius,0,0,radius,center[0],center[1]) )
 
+def arc_cw(center,radius,a1,a2, wedge=False): # ???
+    sx = center[0] + radius*cos(a1)
+    sy = center[1] + radius*sin(a1)
+    ex = center[0] + radius*cos(a2)
+    ey = center[1] + radius*sin(a2)
+    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(-radius),str(center[0]),str(center[1]),str(ex),str(ey),'a']
+    if wedge:
+        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l']
+    return ' '.join(instructions)
+def arc_ccw(center,radius,a1,a2, wedge=False):
+    sx = center[0] + radius*cos(a1)
+    sy = center[1] + radius*sin(a1)
+    ex = center[0] + radius*cos(a2)
+    ey = center[1] + radius*sin(a2)
+    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(radius),str(center[0]),str(center[1]),str(ex),str(ey),'a']
+    if wedge:
+        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l']
+    return ' '.join(instructions)
+
 def ellipse(matrix):
     return matrix.tostring() + ' e'
 
@@ -201,9 +225,6 @@ def ellipse(matrix):
 # Matrix multiplication with operator @
 
 class Matrix(object):
-    m11 = 1; m12 = 0
-    m21 = 0; m22 = 1
-    t1  = 0; t2  = 0
     def __init__(self,m11,m12,m21,m22,t1,t2):
         self.m11 = m11
         self.m12 = m12
