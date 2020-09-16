@@ -198,11 +198,20 @@ class Matrix(object):
         self.m22 = m22
         self.t1 = t1
         self.t2 = t2
+    def __matmul__(self,other):
+        return Matrix( self.m11 * other.m11 + self.m12 * other.m21,   self.m11 * other.m12 + self.m12 * other.m22,
+                       self.m21 * other.m11 + self.m22 * other.m21,   self.m21 * other.m12 + self.m22 * other.m22,
+                       self.m11 * other.t1  + self.m12 * other.t2 + self.t1,
+                       self.m21 * other.t1  + self.m22 * other.t2 + self.t2 )
     def tostring(self):
-        return str(self.m11)+" "+str(self.m21)+" " \
-              +str(self.m12)+" "+str(self.m22)+" " \
-              +str(self.t1) +" "+str(self.t2)
+        return str(self.m11)+' '+str(self.m21)+' '+str(self.m12)+' '+str(self.m22)+' '+str(self.t1)+' '+str(self.t2)
 
+def Identity():
+    return Matrix(1,0,0,1,0,0)
+def Translate(p):
+    return Matrix(1,0,0,1,p[0],p[1])
+def Scale(s):
+    return Matrix(s,0,0,s,0,0)
 def Rotate(a):
     return Matrix(cos(a),-sin(a),sin(a),cos(a), 0, 0)
 def RotateAt(p,a):
