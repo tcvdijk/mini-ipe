@@ -22,9 +22,6 @@ The best way to find out about all the methods and arguments is probably to `imp
 from miniipe import Document, polygon
 
 doc = Document()
-doc.import_stylefile()
-
-doc.add_layer('alpha')
 
 ps = [(100,100), (200,200), (300,100)]
 doc.path( polygon(ps), stroke='black')
@@ -78,4 +75,4 @@ It is not clear to me that I have the rights to distribute the standard Ipe styl
 
 1. Call `import_stylefile()` without arguments. This tries to import `~/.ipe/styles/basic.isy`, which may or may not exist on your system. You get an error if this file does not exist.
 2. Call `import_stylefile(filename)` with the filename of a valid style file. You can get one from Ipe as follows: make a new document, select `Edit > Style sheets`, select `basic` and click `Save`.
-3. Do not import a style file when you make the document with `miniipe` and save it anyway. This will lead to errors when you open the file in Ipe (most prominently, colours and symbols will be missing), but you can then add the `basic` style file after the fact. (See option 2 for how to get the basic style file.) 
+3. Do not import a style file when you make the document with `miniipe` and save it anyway. Ipe may complain when you open the file - colours, symbols et cetera will be missing. You can then add the `basic` style file after the fact. (See option 2 for how to get the basic style file.) 

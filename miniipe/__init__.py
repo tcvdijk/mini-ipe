@@ -11,8 +11,6 @@ class Document(object):
     layout = None
     page = None
 
-    # Constructor
-
     def __init__(self):
         # base document
         self.ipe = Element('ipe')
@@ -21,10 +19,10 @@ class Document(object):
         # ipestyle for some of our own stuff
         self.style = SubElement(self.ipe,'ipestyle')
         self.style.set('name','miniipe')
-        # page, layer and view
+        # always have a page
         self.page = SubElement(self.ipe, 'page')
 
-    # Style things
+    ### Style things
 
     def import_stylefile(self,filename=None):
         if filename is None:
@@ -34,72 +32,131 @@ class Document(object):
         assert ipestyle.tag=="ipestyle", "Expected root of stylefile to by <ipestyle> tag."
         self.ipe.append(ipestyle)
 
-
     def add_style(self, name):
         style = SubElement(self.ipe, name)
         style.set('name',name)
         return style
 
-    def add_layout(self, origin=(0,0), page=(612,792), frame=None, style=None):
+    # Generic style item. Adds it to a specific style tag if
+    # given; otherwise adds it to the miniipe style tag.
+    def add_style_item(self,tag,name,value,style=None):
+        if style is None: style = self.style
+        elem = SubElement(style, tag)
+        elem.set('name',name)
+        elem.set('value',value)
+        return elem
+
+    # Specific style items: a lot of these are just (name,value)
+    # pairs with different tag names, but by including them all,
+    # we give the user tab completion in their IDE.
+    def add_anglesize(self,name,value,style=None):
+        return self.add_style_item('anglesize',name,value)
+    def add_arrowsize(self,name,value,style=None):
+        return self.add_style_item('arrowsize',name,value)
+    def add_color(self,name,value,style=None):
+        return self.add_style_item('color',name,value)
+    def add_color_rgb(self,name,r,g,b,style=None):
+        return self.add_color(name,str(r)+' '+str(g)+' '+str(b),style)
+    def add_dashstyle(self,name,value,style=None):
+        return self.add_style_item('dashstyle',name,value)
+    def add_effect(self,name,duration=None,transition=None,effect=None,style=None):
+        if style is None: style=self.style
+        effecttag = SubElement(style,'effect')
+        effecttag.set('name',name)
+        maybe_set(effecttag,'duration',duration)
+        maybe_set(effecttag,'transition',transition)
+        maybe_set(effecttag,'effect',effect)
+        return effecttag
+    def add_gradient(self,name,type_,coords,extend=None,matrix=None,style=None):
+        if style is None: style=self.style
+        gradient = SubElement(style,'gradient')
+        gradient.set('name',name)
+        gradient.set('type',type_)
+        if extend is not None: gradient.set('extend','yes' if extend else 'no')
+        gradient.set('coords',coords)
+        if matrix is not None: gradient.set('matrix',matrix)
+        return gradient
+    def add_gridsize(self,name,value,style=None):
+        return self.add_style_item('gridsize',name,str(value))
+    def add_latex_preamble(self,latex):
+        preamble = SubElement(self.ipe,'preamble')
+        preamble.text = latex
+        return preamble
+    def add_layout(self,origin=(0,0),page=(612,792),frame=None,skip=None,crop=None,style=None):
         if frame is None: frame = page
         if style is None: style = self.style
         layout = SubElement(style,'layout')
         layout.set('paper',str(page[0])+' '+str(page[1]))
         layout.set('origin',str(origin[0])+' '+str(origin[1]))
         layout.set('frame',str(frame[0])+' '+str(frame[1]))
+        maybe_set(layout,'skip',skip)
+        if crop is not None: layout.set('crop','yes' if crop else 'no')
         return layout
-
+    def add_opacity(self,name,value,style=None):
+        return self.add_style_item('opacity',name,value,style)
+    def add_pagenumberstyle(self,pos,color,size,halign=None,valign=None,style=None):
+        if style is None: style = self.style
+        pagenumberstyle = SubElement(style,'titlestyle')
+        pagenumberstyle.set('pos',pos)
+        pagenumberstyle.set('color',color)
+        pagenumberstyle.set('size',size)
+        maybe_set(pagenumberstyle,'halign',halign)
+        maybe_set(pagenumberstyle,'valign',valign)
+        return pagenumberstyle
+    def add_pathstyle(self,cap=None,join=None,fillrule=None,style=None):
+        if style is None: style=self.style
+        pathstyle = SubElement(style,'symbol')
+        maybe_set(pathstyle,'cap',cap)
+        maybe_set(pathstyle,'join',join)
+        maybe_set(pathstyle,'fillrule',fillrule)
+        return pathstyle
+    def add_pen(self,name,value,style=None):
+        return self.add_style_item('pen',name,str(value),style)
     def add_symbol(self,name,style=None):
         if style is None: style=self.style
-        symbol = SubElement('symbol',style)
+        symbol = SubElement(style,'symbol')
         symbol.set('name',name)
         return symbol
-
-    def add_color_rgb(self,name,r,g,b,style=None):
-        return self.add_color(name,str(r)+' '+str(g)+' '+str(b),style)
-    def add_color(self,name,value,style=None):
+    def add_symbolsize(self,name,value,style=None):
+        return self.add_style_item('symbolsize',name,value)
+    def add_textpad(self,left,right,top,bottom,style=None):
         if style is None: style = self.style
-        color = SubElement(style, 'color')
-        color.set('name',name)
-        color.set('value',value)
-        return color
-
-    def add_dashstyle(self,name,value,style=None):
-        if style is None: style = self.style
-        dashstyle = SubElement(style,'dashstyle')
-        dashstyle.set('name',name)
-        dashstyle.set('value',value)
-        return dashstyle
-
-    def add_opacity(self,name,value):
-        if style is None: style = self.style
-        opacity = SubElement(style,'opacity')
-        opacity.set('name',name)
-        opacity.set('value',str(value))
-        return opacity
-
+        textpad = SubElement(style,'textpad')
+        textpad.set('left',left)
+        textpad.set('right',right)
+        textpad.set('top',top)
+        textpad.set('bottom',bottom)
+        return textpad
     def add_textsize(self,name,value,style=None):
+        return self.add_style_item('textsize',name,value)
+    def add_textstretch(self,name,value,style=None):
+        return self.add_style_item('textstretch',name,value)
+    def add_textstyle(self,name,begin,end,style=None):
         if style is None: style = self.style
-        textsize = SubElement(style,'textsize')
-        textsize.set('name',name)
-        textsize.set('value',value)
-        return textsize
-
+        textstyle = SubElement(style,'textstyle')
+        textstyle.set('name',name)
+        textstyle.set('begin',begin)
+        textstyle.set('end',end)
+        return textstyle
     def add_tiling(self,name,angle,step,width,style=None):
         if style is None: style = self.style
         tiling = SubElement(style,'tiling')
         tiling.set('name',name)
-        tiling.set('angle',str(angle))
+        tiling.set('angle',str(angle)) # in degrees
         tiling.set('step',str(step))
         tiling.set('width',str(width))
         return tiling
+    def add_titlestyle(self,pos,color,size,halign=None,valign=None,style=None):
+        if style is None: style = self.style
+        titlestyle = SubElement(style,'titlestyle')
+        titlestyle.set('pos',pos)
+        titlestyle.set('color',color)
+        titlestyle.set('size',size)
+        maybe_set(titlestyle,'halign',halign)
+        maybe_set(titlestyle,'valign',valign)
+        return titlestyle
 
-    def add_latex_preamble(self,latex):
-        preamble = SubElement(self.ipe,'preamble')
-        preamble.text = latex
-        return preamble
-
-    # Layer and view things
+    ### Layers and views
 
     def add_layer(self,name):
         layer = SubElement(self.page,'layer')
@@ -108,52 +165,120 @@ class Document(object):
 
     def add_view(self,layers,active):
         view = SubElement(self.page,'view')
-        view.set('layers',layers)
-        view.set('active',active)
+        view.set('layers',' '.join(layers))
+        view.set('active',' '.join(active))
         return view
 
-    # Drawing things
+    ### Drawing objects
 
-    def path(self,instructions,matrix=None,stroke='black',fill=None,pen=None, dash=None, arrow=None, rarrow=None, opacity=None, layer=None,closed=False,parent=None):
+    def path( self
+            , instructions
+            , stroke=None
+            , fill=None
+            , dash=None
+            , pen=None
+            , cap=None
+            , join=None
+            , fillrule=None
+            , arrow=None
+            , rarrow=None
+            , opacity=None
+            , tiling=None
+            , gradient=None
+            , layer=None
+            , matrix=None
+            , pin=None
+            , transformation=None
+            , parent=None # miniipe DOM parent
+            ):
         if parent is None: parent = self.page
         e = SubElement(parent,'path')
-        e.set('stroke',stroke)
-        if arrow is not None: e.set('arrow',arrow)
-        if dash is not None: e.set('dash',dash)
-        if fill is not None: e.set('fill',fill)
-        if layer is not None: e.set('layer',layer)
+        maybe_set(e,'stroke',stroke)
+        maybe_set(e,'fill',fill)
+        maybe_set(e,'dash',dash)
+        maybe_set(e,'pen',pen)
+        maybe_set(e,'cap',cap)
+        maybe_set(e,'join',join)
+        maybe_set(e,'fillrule',fillrule)
+        maybe_set(e,'arrow',arrow)
+        maybe_set(e,'rarrow',rarrow)
+        maybe_set(e,'opacity',opacity)
+        maybe_set(e,'tiling',tiling)
+        maybe_set(e,'gradient',gradient)
+        maybe_set(e,'layer',layer)
         if matrix is not None: e.set('matrix',matrix.tostring())
-        if opacity is not None: e.set('opacity',opacity)
-        if pen is not None: e.set('pen',pen)
-        if rarrow is not None: e.set('rarrow',rarrow)
+        maybe_set(e,'pin',pin)
+        maybe_set(e,'transformation',transformation)
         e.text = instructions
         return e
 
-    def symbol(self,pos,name='mark/disk(sx)',stroke='black',size='normal',matrix=None,layer=None):
+    def use( self
+           , name='mark/disk(sx)'
+           , pos=None
+           , stroke=None
+           , fill=None
+           , pen=None
+           , size=None
+           , layer=None
+           , matrix=None
+           , pin=None
+           , transformation=None
+           , parent=None # miniipe DOM parent
+           ):
+        if parent is None: parent=self.page
         e = SubElement(self.page,'use')
         e.set('name', name)
-        e.set('pos', str(pos[0])+' '+str(pos[1]))
-        e.set('size', size)
-        e.set('stroke',stroke)
-        if layer is not None: e.set('layer',layer)
+        if pos is not None: e.set('pos', str(pos[0])+' '+str(pos[1]))
+        maybe_set(e,'stroke',stroke)
+        maybe_set(e,'fill',fill)
+        maybe_set(e,'pen',pen)
+        maybe_set(e,'size',size)
+        maybe_set(e,'layer',layer)
         if matrix is not None: e.set('matrix',matrix.tostring())
+        maybe_set(e,'pin',pin)
+        maybe_set(e,'transformation',transformation)
         return e
 
-    def text(self,pos,text,stroke='black',type='label',size='normal',valign='baseline',halign='left',layer=None,matrix=None,parent=None):
-        if parent is None: parent = self.page
+    def text( self
+            , text
+            , stroke=None
+            , type_=None
+            , size=None
+            , pos=None
+            , width=None
+            , height=None
+            , depth=None
+            , valign=None
+            , halign=None
+            , style=None
+            , opacity=None
+            , layer=None
+            , matrix=None
+            , pin=None
+            , transformation=None
+            , parent=None # miniipe DOM parent
+            ):
+        if parent is None: parent=self.page
         e = SubElement(parent,'text')
-        e.set('pos', str(pos[0])+' '+str(pos[1]))
-        e.set('halign', halign)
-        e.set('size', size)
-        e.set('stroke', stroke)
-        e.set('type', type)
-        e.set('valign', valign)
-        if layer is not None: e.set('layer',layer)
+        maybe_set(e,'stroke',stroke)
+        maybe_set(e,'type',type_)
+        maybe_set(e,'size',size)
+        if pos is not None: e.set('pos', str(pos[0])+' '+str(pos[1]))
+        maybe_set(e,'width',width)
+        maybe_set(e,'height', height)
+        maybe_set(e,'depth',depth)
+        maybe_set(e,'valign',valign)
+        maybe_set(e,'halign',halign)
+        maybe_set(e,'style',style)
+        maybe_set(e,'opacity',opacity)
+        maybe_set(e,'layer',layer)
         if matrix is not None: e.set('matrix',matrix.tostring())
+        maybe_set(e,'pin',pin)
+        maybe_set(e,'transformation',transformation)
         e.text = text
         return e
 
-    # Output methods
+    ### Output
 
     def prepare_output(self):
         # sort the <ipestyle>s before the <page>s
@@ -169,7 +294,19 @@ class Document(object):
         self.prepare_output()
         ElementTree(self.ipe).write(filename, encoding='unicode', xml_declaration=True)
 
-# Path instructions
+### Gradients
+# Get a gradient using Document.add_gradient. Add stops here.
+# Color has to be three numbers; no symbolic names.
+def add_gradient_stop(gradient,offset,color):
+    stop = SubElement(gradient,'stop')
+    stop.set('offset',str(offset))
+    stop.set('color',color) 
+    return stop
+# The stops a gradient must be sorted by offset
+def sort_gradient(gradient):
+    gradient[:] = sorted(gradient, key=lambda e: float(e.get('stop')))
+
+### Path instructions
 
 def rectangle(p,size,centered=False):
     if centered:
@@ -180,51 +317,51 @@ def polygon(points):
     return polyline(points,True)
 
 def polyline(points,closed=False):
-    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1]), lambda _: 'l' ] ]
-    if closed: instructions = instructions + ['h']
+    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1]), lambda _: 'l ' ] ]
+    if closed: instructions = instructions + ['h ']
     return ' '.join(instructions)
 
 def splinegon(points):
-    instructions = [ f(p) for p in points for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['u']
+    instructions = [ f(p) for p in points for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['u ']
     return ' '.join(instructions)
 
 
 def spline(points):
-    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['c']
+    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['c ']
     return ' '.join(instructions)
 def cardinal_spline(points,tension=0.5):
-    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + [str(tension),'C']
+    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + [str(tension),'C ']
     return ' '.join(instructions)
 def clothoid(points):
-    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['L']
+    instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['L ']
     return ' '.join(instructions)
 
 def circle(center,radius):
     return ellipse( Matrix(radius,0,0,radius,center[0],center[1]) )
 
-def arc_cw(center,radius,a1,a2, wedge=False): # ???
+def arc_cw(center,radius,a1,a2, wedge=False):
     sx = center[0] + radius*cos(a1)
     sy = center[1] + radius*sin(a1)
     ex = center[0] + radius*cos(a2)
     ey = center[1] + radius*sin(a2)
-    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(-radius),str(center[0]),str(center[1]),str(ex),str(ey),'a']
+    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(-radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
     if wedge:
-        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l']
+        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l ']
     return ' '.join(instructions)
 def arc_ccw(center,radius,a1,a2, wedge=False):
     sx = center[0] + radius*cos(a1)
     sy = center[1] + radius*sin(a1)
     ex = center[0] + radius*cos(a2)
     ey = center[1] + radius*sin(a2)
-    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(radius),str(center[0]),str(center[1]),str(ex),str(ey),'a']
+    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
     if wedge:
-        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l']
+        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l ']
     return ' '.join(instructions)
 
 def ellipse(matrix):
-    return matrix.tostring() + ' e'
+    return matrix.tostring() + ' e '
 
-# Helper class for matrices.
+### Helper class for matrices.
 # Matrix multiplication with operator @
 
 class Matrix(object):
@@ -256,3 +393,8 @@ def Rotate(a):
     return Matrix(cos(a),-sin(a),sin(a),cos(a), 0, 0)
 def RotateAt(p,a):
     return Matrix(cos(a),-sin(a),sin(a),cos(a), p[0], p[1])
+
+### DOM helper
+
+def maybe_set(e,name,value):
+    if value is not None: e.set(name,value)
