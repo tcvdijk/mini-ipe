@@ -1,6 +1,6 @@
 # Demonstration of various kinds of splines in Ipe.
 
-from miniipe import Document, polyline, spline, cardinal_spline, splinegon
+from miniipe import Document, polyline, spline, cardinal_spline, clothoid, splinegon
 
 doc = Document()
 doc.import_stylefile()
@@ -27,6 +27,9 @@ doc.path( splinegon(ps), stroke='orange', layer='splinegon' )
 doc.add_layer('cardinal spline')
 for t in range(11):
     doc.path( cardinal_spline(ps,t/10), stroke='lightblue', layer='cardinal spline' )
+
+doc.add_layer('clothoid')
+doc.path( clothoid(ps), stroke='blue', layer='clothoid')
 
 # Overlay the control points
 doc.add_layer('input points')

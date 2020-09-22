@@ -1,5 +1,3 @@
-![MINI-IPE logo](logo.png)
-
 # Mini-Ipe
 
 This is a source-only, no-dependencies Python package to write [Ipe](http://ipe.otfried.org/) files.
