@@ -1,3 +1,6 @@
+# Does not include the basic Ipe style file and instead demonstrates
+# defining custom styles.
+
 from miniipe import *
 
 doc = Document()

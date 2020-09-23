@@ -9,7 +9,7 @@ doc.add_layout( page=(620,850) )
 doc.add_layer('alpha')
 
 # Text
-doc.text( (64,768), 'Hello, this is miniipe!', size='Huge' )
+doc.text( 'Hello, this is miniipe!', pos=(64,768), size='Huge' )
 
 # Plot a function
 doc.add_layer('plot')
@@ -61,7 +61,8 @@ for i,p in enumerate(fewer_points):
               opacity='50%',
               matrix=RotateAt(p,angle),
               layer='circles' )
-    doc.text( (0,5), str(i),
+    doc.text( str(i),
+              pos=(0,5),
               stroke='red',
               halign='center',
               valign='bottom',

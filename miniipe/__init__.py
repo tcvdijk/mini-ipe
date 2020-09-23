@@ -20,7 +20,57 @@ class Document(object):
         self.style = SubElement(self.ipe,'ipestyle')
         self.style.set('name','miniipe')
         # always have a page
-        self.page = SubElement(self.ipe, 'page')
+        self.page = self.add_page()
+
+    ### Pages, notes, layers and views
+
+    def add_page( self
+                , title=None
+                , section=None
+                , subsection=None
+                , marked=None
+                ):
+        page = SubElement(self.ipe,'page')
+        maybe_set(page,'title',title)
+        maybe_set(page,'section',section)
+        maybe_set(page,'subsection',subsection)
+        maybe_set_bool(page,'marked',marked)
+        return page
+    
+    def add_notes(self,text,page=None):
+        if page is None: page=self.page
+        notes = SubElement(self.ipe,'notes')
+        notes.text = text
+        return notes
+
+    def add_layer( self
+                 , name
+                 , edit=None
+                 , snap=None
+                 , data=None
+                 , page=None # miniipe parent element
+                 ):
+        layer = SubElement(self.page,'layer')
+        layer.set('name',name)
+        maybe_set(layer,'edit',edit)
+        maybe_set(layer,'snap',snap)
+        maybe_set(layer,'data',data)
+        return layer
+
+    def add_view( self
+                , layers # list of strings
+                , active # list of strings
+                , effect=None
+                , name=None
+                , marked=None
+                ):
+        view = SubElement(self.page,'view')
+        view.set('layers',' '.join(layers))
+        view.set('active',' '.join(active))
+        maybe_set(view,'effect',effect)
+        maybe_set(view,'name',name)
+        maybe_set_bool(view,'marked',marked)
+        return view
 
     ### Style things
 
@@ -43,7 +93,7 @@ class Document(object):
         if style is None: style = self.style
         elem = SubElement(style, tag)
         elem.set('name',name)
-        elem.set('value',value)
+        elem.set('value',str(value))
         return elem
 
     # Specific style items: a lot of these are just (name,value)
@@ -72,8 +122,8 @@ class Document(object):
         gradient = SubElement(style,'gradient')
         gradient.set('name',name)
         gradient.set('type',type_)
-        if extend is not None: gradient.set('extend','yes' if extend else 'no')
         gradient.set('coords',coords)
+        maybe_set_bool(gradient,'extend',extend)
         if matrix is not None: gradient.set('matrix',matrix)
         return gradient
     def add_gridsize(self,name,value,style=None):
@@ -90,16 +140,16 @@ class Document(object):
         layout.set('origin',str(origin[0])+' '+str(origin[1]))
         layout.set('frame',str(frame[0])+' '+str(frame[1]))
         maybe_set(layout,'skip',skip)
-        if crop is not None: layout.set('crop','yes' if crop else 'no')
+        maybe_set_bool(layout,'crop',crop)
         return layout
     def add_opacity(self,name,value,style=None):
         return self.add_style_item('opacity',name,value,style)
     def add_pagenumberstyle(self,pos,color,size,halign=None,valign=None,style=None):
         if style is None: style = self.style
         pagenumberstyle = SubElement(style,'titlestyle')
-        pagenumberstyle.set('pos',pos)
+        pagenumberstyle.set('pos',str(pos[0])+' '+str(pos[1]))
         pagenumberstyle.set('color',color)
-        pagenumberstyle.set('size',size)
+        pagenumberstyle.set('size',str(size))
         maybe_set(pagenumberstyle,'halign',halign)
         maybe_set(pagenumberstyle,'valign',valign)
         return pagenumberstyle
@@ -149,25 +199,13 @@ class Document(object):
     def add_titlestyle(self,pos,color,size,halign=None,valign=None,style=None):
         if style is None: style = self.style
         titlestyle = SubElement(style,'titlestyle')
-        titlestyle.set('pos',pos)
+        titlestyle.set('pos',str(pos[0])+' '+str(pos[1]))
         titlestyle.set('color',color)
         titlestyle.set('size',size)
         maybe_set(titlestyle,'halign',halign)
         maybe_set(titlestyle,'valign',valign)
         return titlestyle
 
-    ### Layers and views
-
-    def add_layer(self,name):
-        layer = SubElement(self.page,'layer')
-        layer.set('name',name)
-        return layer
-
-    def add_view(self,layers,active):
-        view = SubElement(self.page,'view')
-        view.set('layers',' '.join(layers))
-        view.set('active',' '.join(active))
-        return view
 
     ### Drawing objects
 
@@ -397,4 +435,6 @@ def RotateAt(p,a):
 ### DOM helper
 
 def maybe_set(e,name,value):
-    if value is not None: e.set(name,value)
+    if value is not None: e.set(name,str(value))
+def maybe_set_bool(e,name,value):
+    if value is not None: e.set(name,'yes' if value else 'no')

@@ -28,8 +28,8 @@ doc.path( pie2, fill='red', stroke='black' )
 
 Legend = Translate( (24, 268) )
 doc.path( rectangle((0,0), (16,16),True), stroke='black', fill='yellow', pen='fat', matrix=Legend)
-doc.text( (16,0), "Pac-Man", valign='center',matrix=Legend)
-doc.path( rectangle((0,-32), (16,16),True), stroke='black', fill='red', pen='fat', matrix=Legend)
-doc.text( (16,-32), "Not Pac-Man", valign='center',matrix=Legend)
+doc.text( "Pac-Man", pos=(16,0), valign='center',matrix=Legend)
+#doc.path( rectangle((0,-32), (16,16),True), stroke='black', fill='red', pen='fat', matrix=Legend)
+#doc.text( (16,-32), "Not Pac-Man", valign='center',matrix=Legend)
 
 doc.write('arcs.ipe')

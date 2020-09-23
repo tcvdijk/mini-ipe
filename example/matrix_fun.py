@@ -12,7 +12,7 @@ doc.add_layer('alpha')
 ps = [(10,0),(20,0),(19,1),(19,-1),(20,0)]
 M = Translate( (300,300) )
 for _ in range(207):
-    doc.use( (0,0), name='mark/cross(sx)', matrix=M )
+    doc.use( pos=(0,0), name='mark/cross(sx)', matrix=M )
     doc.path( polyline(ps), matrix=M)
     M @= Rotate(0.1) @ Translate( (3,1) ) @ Scale(1.01)
 
