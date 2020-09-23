@@ -78,6 +78,13 @@ See the [transform](example/transform.py) example to confirm that the results ma
 
 The `ellipse` function takes a `Matrix` argument: it draws the ellipse resulting from transforming the unit circle by this matrix.
 
+### The 'parent' argument
+
+The methods `path`, `text` and `use` take an optional argument called `parent`.
+If omitted, the object is added to the default page that a `miniipe.Document` starts with.
+If you make more pages, pass the page you want to add the object to instead.
+To put the object in a group (`miniipe.Document.group(...)`), pass the group instead.
+
 ### Style files
 
 It is not clear to me that I have the rights to distribute the standard Ipe style file, so you will have to provide your own. There are several ways to go about this.

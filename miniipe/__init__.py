@@ -162,10 +162,12 @@ class Document(object):
         return pathstyle
     def add_pen(self,name,value,style=None):
         return self.add_style_item('pen',name,str(value),style)
-    def add_symbol(self,name,style=None):
+    def add_symbol(self,name,transformations=None,snap=None,style=None):
         if style is None: style=self.style
         symbol = SubElement(style,'symbol')
         symbol.set('name',name)
+        maybe_set(symbol,'transformations',transformations)
+        maybe_set_bool(symbol,'snap',snap)
         return symbol
     def add_symbolsize(self,name,value,style=None):
         return self.add_style_item('symbolsize',name,value)
@@ -316,6 +318,27 @@ class Document(object):
         e.text = text
         return e
 
+    def group( self
+             , clip=None
+             , url=None
+             , decoration=None
+             , layer=None
+             , matrix=None
+             , pin=None
+             , transformation=None
+             , parent=None # miniipe DOM parent
+             ):
+        if parent is None: parent=self.page
+        e = SubElement(parent,'group')
+        maybe_set(e,'clip',clip)
+        maybe_set(e,'url',url)
+        maybe_set(e,'decoration',decoration)
+        maybe_set(e,'layer',layer)
+        if matrix is not None: e.set('matrix',matrix.tostring())
+        maybe_set(e,'pin',pin)
+        maybe_set(e,'transformation',transformation)
+        return e
+
     ### Output
 
     def prepare_output(self):
@@ -342,7 +365,7 @@ def add_gradient_stop(gradient,offset,color):
     return stop
 # The stops a gradient must be sorted by offset
 def sort_gradient(gradient):
-    gradient[:] = sorted(gradient, key=lambda e: float(e.get('stop')))
+    gradient[:] = sorted(gradient, key=lambda e: float(e.get('offset')))
 
 ### Path instructions
 
@@ -362,7 +385,6 @@ def polyline(points,closed=False):
 def splinegon(points):
     instructions = [ f(p) for p in points for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['u ']
     return ' '.join(instructions)
-
 
 def spline(points):
     instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['c ']
@@ -384,7 +406,7 @@ def arc_cw(center,radius,a1,a2, wedge=False):
     ey = center[1] + radius*sin(a2)
     instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(-radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
     if wedge:
-        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l ']
+        instructions += [ str(center[0]), str(center[1]), 'l h ' ]
     return ' '.join(instructions)
 def arc_ccw(center,radius,a1,a2, wedge=False):
     sx = center[0] + radius*cos(a1)
@@ -393,7 +415,7 @@ def arc_ccw(center,radius,a1,a2, wedge=False):
     ey = center[1] + radius*sin(a2)
     instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
     if wedge:
-        instructions += [ str(center[0]), str(center[1]), 'l', str(sx), str(sy), 'l ']
+        instructions += [ str(center[0]), str(center[1]), 'l h ' ]
     return ' '.join(instructions)
 
 def ellipse(matrix):
@@ -431,6 +453,11 @@ def Rotate(a):
     return Matrix(cos(a),-sin(a),sin(a),cos(a), 0, 0)
 def RotateAt(p,a):
     return Matrix(cos(a),-sin(a),sin(a),cos(a), p[0], p[1])
+
+### Helper for Symbol names
+
+def symbol_name(base,stroke=False,fill=False,pen=False,size=False):
+    return base + '(' + ('s' if stroke else '') + ('f' if fill else '') + ('p' if pen else '') + ('x' if size else '') + ')'
 
 ### DOM helper
 
