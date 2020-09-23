@@ -1,4 +1,4 @@
-# Demonstration of various kinds of splines in Ipe.
+# Demonstrates various kinds of splines in Ipe.
 
 from miniipe import Document, polyline, spline, cardinal_spline, clothoid, splinegon
 
@@ -19,7 +19,7 @@ ps = [ (100,100)
 doc.add_layer('spline')
 doc.path( spline(ps), stroke='red', layer='spline' )
 
-# A closed polygon, but as a bsline
+# A closed polygon, but as a B-spline
 doc.add_layer('splinegon')
 doc.path( splinegon(ps), stroke='orange', layer='splinegon' )
 
@@ -28,6 +28,7 @@ doc.add_layer('cardinal spline')
 for t in range(11):
     doc.path( cardinal_spline(ps,t/10), stroke='lightblue', layer='cardinal spline' )
 
+# Clothoids are really cool interpolating splines
 doc.add_layer('clothoid')
 doc.path( clothoid(ps), stroke='blue', layer='clothoid')
 

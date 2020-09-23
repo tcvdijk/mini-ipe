@@ -1,7 +1,7 @@
 # Does not include the basic Ipe style file and instead demonstrates
 # defining custom styles.
 
-from miniipe import *
+from miniipe import Document, add_gradient_stop, rectangle, polygon
 
 doc = Document()
 

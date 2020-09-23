@@ -10,11 +10,11 @@ doc = Document()
 doc.import_stylefile()
 
 # Add a layer.
-doc.add_layer('alpha')
+doc.add_layer('my layer')
 
 # Draw a triangle.
 ps = [(100,100), (200,200), (300,100)]
-doc.path( polygon(ps), stroke='black', layer='alpha')
+doc.path( polygon(ps), stroke='black', layer='my layer')
 
 # Write it to a file.
 doc.write('simple.ipe')

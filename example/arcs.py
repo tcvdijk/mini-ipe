@@ -1,4 +1,4 @@
-# Demonstrates the use of arcs.
+# Demonstrates the use of arcs and wedges
 
 from miniipe import Document, Translate, Scale, rectangle, circle, arc_cw, arc_ccw
 from math import pi
