@@ -16,8 +16,8 @@ filename = 'logo.jpg'
 width = 635
 height = 433
 with open(filename,'rb') as f:
-    png = f.read()
-    blob = b64encode(png).decode('utf-8')
+    jpg = f.read()
+    blob = b64encode(jpg).decode('utf-8')
     doc.add_bitmap( image_id, width, height, blob=blob, Filter='DCTDecode', encoding='base64', length=len(blob) )
 
 # Then put the image on the page. This supports transformation matrices.
