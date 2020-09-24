@@ -94,3 +94,9 @@ It is not clear to me that I have the rights to distribute the standard Ipe styl
 3. Do not import a style file when you make the document with `miniipe` and save it anyway. Ipe may complain when you open the file - colours, symbols et cetera will be missing. You can then add the `basic` style file after the fact. (See option 2 for how to get the basic style file.) 
 
 You can also make styles using Mini-Ipe. See the [style](example/style.py) example code.
+
+### Bitmap images
+
+You can include bitmap images in Ipe files using `add_bitmap` and `image`.
+Mini-Ipe does not do any bitmap processing: the image payload is entirely your own responsibility.
+See the [bitmap](example/bitmap.py) example.

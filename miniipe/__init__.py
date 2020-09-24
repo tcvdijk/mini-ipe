@@ -103,6 +103,21 @@ class Document(object):
         return self.add_style_item('anglesize',name,value)
     def add_arrowsize(self,name,value,style=None):
         return self.add_style_item('arrowsize',name,value)
+    def add_bitmap(self,id,width,height,blob,ColorSpace=None,ColorKey=None,BitsPerComponent=None,length=None,Filter=None,encoding=None,alphaLength=None,style=None):
+        if style is None: style=self.style
+        bitmap = SubElement(self.ipe,'bitmap')
+        bitmap.set('id',str(id))
+        bitmap.set('width',str(width))
+        bitmap.set('height',str(height))
+        maybe_set(bitmap,'BitsPerComponent',BitsPerComponent)
+        maybe_set(bitmap,'ColorSpace',ColorSpace)
+        maybe_set(bitmap,'ColorKey',ColorKey)
+        maybe_set(bitmap,'Filter',Filter)
+        maybe_set(bitmap,'length',length)
+        maybe_set(bitmap,'encoding',encoding)
+        maybe_set(bitmap,'alphaLength',alphaLength)
+        bitmap.text = blob
+        return bitmap
     def add_color(self,name,value,style=None):
         return self.add_style_item('color',name,value)
     def add_color_rgb(self,name,r,g,b,style=None):
@@ -318,6 +333,25 @@ class Document(object):
         e.text = text
         return e
 
+    def image( self
+             , bitmap # int corresponding to the add_bitmap id
+             , rect # 4-tuple x1 y1 x2 y2
+             , layer=None
+             , matrix=None
+             , pin=None
+             , transformation=None
+             , parent=None # miniipe DOM parent
+             ):
+        if parent is None: parent=self.page
+        e = SubElement(parent,'image')
+        e.set('bitmap',str(bitmap))
+        e.set('rect',' '.join(map(str,rect)))
+        maybe_set(e,'layer',layer)
+        if matrix is not None: e.set('matrix',matrix.tostring())
+        maybe_set(e,'pin',pin)
+        maybe_set(e,'transformation',transformation)
+        return e
+
     def group( self
              , clip=None
              , url=None
@@ -343,7 +377,7 @@ class Document(object):
 
     def prepare_output(self):
         # sort the <ipestyle>s before the <page>s
-        ipe_order = lambda e: {'preamble': 1, 'ipestyle': 2, 'page': 3}.get( e.tag, 4 )
+        ipe_order = lambda e: {'preamble': 1, 'bitmap': 2, 'ipestyle': 3, 'page': 4}.get( e.tag, 5 )
         self.ipe[:] = sorted(self.ipe, key=ipe_order)
         # sort the page tag: layer < view < content
         page_order = lambda e: {'layer': 1, 'view': 2}.get( e.tag, 3 )
@@ -449,6 +483,8 @@ def Translate(p):
     return Matrix(1,0,0,1,p[0],p[1])
 def Scale(s):
     return Matrix(s,0,0,s,0,0)
+def Stretch(x,y):
+    return Matrix(x,0,0,y,0,0)
 def Rotate(a):
     return Matrix(cos(a),-sin(a),sin(a),cos(a), 0, 0)
 def RotateAt(p,a):
