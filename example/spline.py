@@ -36,6 +36,6 @@ doc.path( clothoid(ps), stroke='blue', layer='clothoid')
 doc.add_layer('input points')
 doc.path( polyline(ps), stroke='black', pen='fat', layer='input points' )
 for p in ps:
-    doc.use(p, layer='input points')
+    doc.use(pos=p, layer='input points')
 
 doc.write('splines.ipe')

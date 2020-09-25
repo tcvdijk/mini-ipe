@@ -22,7 +22,7 @@ doc.path( polyline(points), stroke='black', layer='plot' )
 fewer_points = points[::40]
 doc.add_layer('points')
 for p in fewer_points:
-    doc.use(p,layer='points')
+    doc.use(pos=p,layer='points')
 
 # Draw a Koch fractal between them
 def pairs(xs): return zip(xs[0::],xs[1::])
