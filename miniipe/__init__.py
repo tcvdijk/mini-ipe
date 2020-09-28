@@ -3,7 +3,7 @@ from os.path import expanduser
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment, tostring
 
-from math import sin, cos
+from math import sin, cos, sqrt
 
 class Document(object):
     ipe = None
@@ -264,7 +264,7 @@ class Document(object):
         if matrix is not None: e.set('matrix',matrix.tostring())
         maybe_set(e,'pin',pin)
         maybe_set(e,'transformation',transformation)
-        e.text = instructions
+        e.text = str(instructions)
         return e
 
     def use( self
@@ -401,7 +401,7 @@ def add_gradient_stop(gradient,offset,color):
 def sort_gradient(gradient):
     gradient[:] = sorted(gradient, key=lambda e: float(e.get('offset')))
 
-### Path instructions
+### Path instructions: convenience functions
 
 def rectangle(p,size,centered=False):
     if centered:
@@ -455,6 +455,52 @@ def arc_ccw(center,radius,a1,a2, wedge=False):
 def ellipse(matrix):
     return matrix.tostring() + ' e '
 
+### Path instructions: fluent builder interface
+
+class Path(object):
+    def __init__(self):
+        self.prefix = ''
+        self.tokens = []
+    def __str__(self):
+        return self.prefix + ' '.join(self.tokens)
+    def commit(self):
+        self.prefix = ' '.join([self.prefix]+self.tokens)
+        self.tokens = []
+
+    def token(self,t):
+        self.tokens.append(str(t))
+        return self
+    def point(self,p):
+        return self.token(p[0]).token(p[1])
+    def matrix(self,M):
+        return self.token(M.tostring())
+
+    def move(self,p):
+        return self.point(p).token('m')
+    def line(self,p):
+        return self.point(p).token('l')
+
+
+    def ellipse(self,M):
+        return self.token(M.tostring()).token('e')
+
+    def arc_cw_fromto(self, center, a, b):
+        dx = center[0]-a[0]
+        dy = center[1]-a[1]
+        radius = sqrt(dx*dx+dy*dy)
+        return self.move(a).token(Matrix(radius,0,0,-radius,center[0],center[1])).point(b).token('a')
+    def arc_ccw_fromto(self, center, a, b):
+        dx = center[0]-a[0]
+        dy = center[1]-a[1]
+        radius = sqrt(dx*dx+dy*dy)
+        return self.move(a).token(Matrix(radius,0,0,radius,center[0],center[1])).point(b).token('a')
+
+    def close_spline(self,p):
+        return self.token('c')
+    def close(self):
+        return self.token('h')
+
+
 ### Helper class for matrices.
 # Matrix multiplication with operator @
 
@@ -476,6 +522,8 @@ class Matrix(object):
         return ( self.m11*x + self.m12*y + self.t1, self.m21*x + self.m22*y + self.t2 )
     def tostring(self):
         return str(self.m11)+' '+str(self.m21)+' '+str(self.m12)+' '+str(self.m22)+' '+str(self.t1)+' '+str(self.t2)
+    def __str__(self):
+        return self.tostring()
 
 def Identity():
     return Matrix(1,0,0,1,0,0)
