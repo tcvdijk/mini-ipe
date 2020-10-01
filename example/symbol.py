@@ -1,6 +1,6 @@
 # Demonstrates making and using symbols
 
-from miniipe import Document, symbol_name, polyline, circle, arc_ccw
+from miniipe import Document, symbol_name, segment, circle, arc
 from math import pi
 
 doc = Document()
@@ -15,10 +15,10 @@ x = symbol_name('mark/x')
 # Add a symbol with this name to the style
 x_symbol = doc.add_symbol( x )
 # A symbol can only contain a single object.
-# We want two, so we nest it in a group
+# We want two lines, so we nest it in a group
 x_group = doc.group(parent=x_symbol)
-doc.path( polyline([(-1,-1),(1,1)]), parent=x_group )
-doc.path( polyline([(1,-1),(-1,1)]), parent=x_group )
+doc.path( segment((-1,-1),(1,1)), parent=x_group )
+doc.path( segment((1,-1),(-1,1)), parent=x_group )
 
 # Now put it on the page a couple of times
 doc.use( x, pos=(16,16) )
@@ -50,14 +50,14 @@ doc.use( x, pos=(24,24), size='ginormous' )
 ### A smiley face with flexible color
 
 # Whether a symbol's fill in configurable depends on its name.
-# Anything with fill='sym-fill' will get replaced.
+# Anything with fill='sym-fill' will get the symbol's fill.
 smiley = symbol_name( 'mark/smiley', fill=True )
 smiley_symbol = doc.add_symbol(smiley)
 smiley_group = doc.group(parent=smiley_symbol)
 doc.path( circle((0,0),4), fill='sym-fill', parent=smiley_group )
 doc.path( circle((-2,1),0.5), fill='black', parent=smiley_group )
 doc.path( circle(( 2,1),0.5), fill='black', parent=smiley_group )
-doc.path( arc_ccw((0,0), 2.5, 9*pi/8, 15*pi/8), parent=smiley_group )
+doc.path( arc((0,0), 2.5, 9*pi/8, 15*pi/8), parent=smiley_group )
 
 doc.use( smiley, pos=( 8, 8), )
 doc.use( smiley, pos=(40, 8), fill='1 1 0' )

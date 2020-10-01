@@ -12,6 +12,8 @@ class Document(object):
     page = None
 
     def __init__(self):
+        """Makes an empty document with a single page in it.
+        """
         # base document
         self.ipe = Element('ipe')
         self.ipe.set('version','70212')
@@ -373,9 +375,37 @@ class Document(object):
         maybe_set(e,'transformation',transformation)
         return e
 
+    ### Sorting object order
+
+    def sort_by_layer(self,order,page=None):
+        """Given a list of layer names (order), sorts the objects in a page by layer, back-to-front.
+        Puts objects with other layer names (or no layer name) all the way in the back.
+
+        Args:
+            order (list of strings): Back to front.
+            page (miniipe page, optional): The page that gets sorted. Defaults to None.
+        """
+        key = {}
+        for i, x in enumerate(order): key[x] = i+1
+        print(key)
+        layer_order = lambda e: key.get(e.get('layer'),0)
+        self.sort_objects( layer_order, page )
+
+    def sort_objects(self,key,page=None):
+        """Sorts the objects in 'page' by 'key'
+
+        Args:
+            key (function): Gets an ElementTree element in the Ipe DOM, returns a value like the normal sort function's key argument.
+            page (miniipe page, optional): The page that gets sorted. Defaults to None.
+        """
+        if page is None: page=self.page
+        page[:] = sorted(page, key=key)
+
     ### Output
 
     def prepare_output(self):
+        """(Internal method; Ipe has certain restrictions on the order in which tags occur in the file, which is ensured here. Internally called by .tostring and .write; should be unnecessary to call from outside.)
+        """
         # sort the <ipestyle>s before the <page>s
         ipe_order = lambda e: {'preamble': 1, 'bitmap': 2, 'ipestyle': 3, 'page': 4}.get( e.tag, 5 )
         self.ipe[:] = sorted(self.ipe, key=ipe_order)
@@ -383,9 +413,19 @@ class Document(object):
         page_order = lambda e: {'layer': 1, 'view': 2}.get( e.tag, 3 )
         self.page[:] = sorted(self.page, key=page_order)
     def tostring(self):
+        """Serialise the Ipe DOM to string.
+
+        Returns:
+            string: XML representation of the Ipe DOM
+        """
         self.prepare_output()
         return ET.tostring(self.ipe,encoding='unicode', xml_declaration=True, method='xml')
     def write(self,filename):
+        """Serialise the Ipe DOM and write it to a file
+
+        Args:
+            filename (string): Filename to write to.
+        """
         self.prepare_output()
         ElementTree(self.ipe).write(filename, encoding='unicode', xml_declaration=True)
 
@@ -393,111 +433,311 @@ class Document(object):
 # Get a gradient using Document.add_gradient. Add stops here.
 # Color has to be three numbers; no symbolic names.
 def add_gradient_stop(gradient,offset,color):
+    """Add a stop to a gradient.
+
+    Args:
+        gradient (miniipe gradient): As returned from add_gradient
+        offset (number/string): Offset fraction on the gradient.
+        color (string): Color as three numbers separated by whitespace (rgb); no symbolic names.
+
+    Returns:
+        [miniipe gradient stop]: The created gradient stop.
+    """
     stop = SubElement(gradient,'stop')
     stop.set('offset',str(offset))
     stop.set('color',color) 
     return stop
 # The stops a gradient must be sorted by offset
 def sort_gradient(gradient):
+    """The stops of a gradient must be sorted by offset.
+    Call this before serialisation if your stops might not be sorted.
+
+    Args:
+        gradient (miniipe gradient): As returned from add_gradient
+    """
     gradient[:] = sorted(gradient, key=lambda e: float(e.get('offset')))
 
 ### Path instructions: convenience functions
 
+def segment(p1,p2):
+    """Path instructions for a single line segment.
+
+    Args:
+        p1 (2-typle): (x,y) start position
+        p2 (2-tuple): (x,y) end position
+
+    Returns:
+        [type]: [description]
+    """
+    return polyline([p1,p2])
 def rectangle(p,size,centered=False):
+    """Path instructions for a rectangle.
+
+    Args:
+        p (2-tuple): (x,y) position
+        size (2-tuple): width, height
+        centered (bool, optional): If true, then p is the middle of the rectangle; else p is the bottom-left corner. Defaults to False.
+
+    Returns:
+        string: Ipe path instructions
+    """
     if centered:
         p = ( p[0]-size[0]/2, p[1]-size[1]/2 )
     return polygon( [p,(p[0],p[1]+size[1]),(p[0]+size[0],p[1]+size[1]),(p[0]+size[0],p[1])] )
 
 def polygon(points):
+    """Path instructions for a polygon
+
+    Args:
+        points (list of 2-tuples): The vertices of the polygon
+
+    Returns:
+        string: Ipe path instructions
+    """
     return polyline(points,True)
 
 def polyline(points,closed=False):
+    """Path instructions for a polyline
+
+    Args:
+        points (list of 2-tuples): The vertices of the polyline
+        closed (bool, optional): Close the polyline to a polygon. Defaults to False.
+
+    Returns:
+        string: Ipe path instructions
+    """
     instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1]), lambda _: 'l ' ] ]
     if closed: instructions = instructions + ['h ']
     return ' '.join(instructions)
 
 def splinegon(points):
+    """Path instructions for a splinegon
+
+    Args:
+        points (list of 2-tuples): The control points for the splinegon
+
+    Returns:
+        string: Ipe path instructions
+    """
     instructions = [ f(p) for p in points for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['u ']
     return ' '.join(instructions)
 
 def spline(points):
+    """Path instructions for a spline
+
+    Args:
+        points (list of 2-tuples): The control points for the spline
+
+    Returns:
+        string: Ipe path instructions
+    """
     instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['c ']
     return ' '.join(instructions)
 def cardinal_spline(points,tension=0.5):
+    """Path instructions for a cardinal spline. The spline interpolates the control points.
+
+    Args:
+        points (list of 2-tuples): The control points for the cardinal spline.
+        tension (float, optional): Tension of the spline in the range [0,1]. Defaults to 0.5.
+
+    Returns:
+        string: Ipe path instructions
+    """
     instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + [str(tension),'C ']
     return ' '.join(instructions)
 def clothoid(points):
+    """Path instructions for a clothoid spline. The spline interpolates the control points.
+
+    Args:
+        points (list of 2-tuples): The control points for the spline
+
+    Returns:
+        string: Ipe path instructions
+    """
     instructions = [ str(points[0][0]), str(points[0][1]), 'm' ] + [ f(p) for p in points[1:] for f in [ lambda p: str(p[0]), lambda p: str(p[1])] ] + ['L ']
     return ' '.join(instructions)
 
 def circle(center,radius):
+    """Path instructions for a circle.
+
+    Args:
+        center (2-tuple): Midpoint of the circle
+        radius (float): Radius of the circle
+
+    Returns:
+        string: Ipe path instructions
+    """
     return ellipse( Matrix(radius,0,0,radius,center[0],center[1]) )
 
-def arc_cw(center,radius,a1,a2, wedge=False):
+def arc(center,radius,a1,a2,cw=False,wedge=False):
+    """Path instructions for a clockwise arc.
+
+    Args:
+        center (2-tuple): Midpoint of the circle
+        radius (float): Radius of the circle
+        a1 (float): Start angle of the arc (counterclockwise radians, 0=right)
+        a2 (float): End angle of the arc (counterclockwise radians, 0=right)
+        cw (bool, optional): Clockwise arc? Counterclockwise if False.
+        wedge (bool, optional): Close the arc as a wedge to the midpoint? Defaults to False.
+
+    Returns:
+        string: Ipe path instructions
+    """
     sx = center[0] + radius*cos(a1)
     sy = center[1] + radius*sin(a1)
     ex = center[0] + radius*cos(a2)
     ey = center[1] + radius*sin(a2)
-    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(-radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
+    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(-radius) if cw else str(radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
     if wedge:
         instructions += [ str(center[0]), str(center[1]), 'l h ' ]
     return ' '.join(instructions)
-def arc_ccw(center,radius,a1,a2, wedge=False):
-    sx = center[0] + radius*cos(a1)
-    sy = center[1] + radius*sin(a1)
-    ex = center[0] + radius*cos(a2)
-    ey = center[1] + radius*sin(a2)
-    instructions = [str(sx), str(sy),'m',str(radius),'0 0',str(radius),str(center[0]),str(center[1]),str(ex),str(ey),'a ']
+def arc_fromto(center,p,q,cw=False,wedge=False):
+    dx = center[0]-p[0]
+    dy = center[1]-p[1]
+    radius = sqrt(dx*dx+dy*dy)
+    instructions = [str(p[0]), str(p[1]),'m',str(Matrix(radius,0,0,-radius,center[0],center[1])),str(q[0]),str(q[1]),'a ']
     if wedge:
         instructions += [ str(center[0]), str(center[1]), 'l h ' ]
     return ' '.join(instructions)
 
 def ellipse(matrix):
+    """Path instructions for an ellipse.
+
+    Args:
+        matrix (Matrix): Transformation matrix from a unit circle to the desired ellipse.
+
+    Returns:
+        string: Ipe path instructions
+    """
     return matrix.tostring() + ' e '
 
 ### Path instructions: fluent builder interface
 
 class Path(object):
+    """String-builder-like object for Ipe path instructions."""
+
     def __init__(self):
         self.prefix = ''
         self.tokens = []
     def __str__(self):
         return self.prefix + ' '.join(self.tokens)
     def commit(self):
+        """Destructively join all tokens currently in the list. Speeds up subsequent serialisations, but now the list of tokens is no longer available for manipulation.
+        """
         self.prefix = ' '.join([self.prefix]+self.tokens)
         self.tokens = []
 
     def token(self,t):
+        """Append a token to the list.
+
+        Args:
+            t (string): Token to add
+
+        Returns:
+            Path: Fluent return of the Path object
+        """
         self.tokens.append(str(t))
         return self
     def point(self,p):
+        """Append a point to the list.
+
+        Args:
+            p (2-tuple): Point to add
+
+        Returns:
+            Path: Fluent return of the Path object
+        """
         return self.token(p[0]).token(p[1])
     def matrix(self,M):
+        """Append a matrix to the list.
+
+        Args:
+            M (Matrix): Matrix to add
+
+        Returns:
+            Path: Fluent return of the Path object
+        """
         return self.token(M.tostring())
 
     def move(self,p):
+        """Move the pen.
+
+        Args:
+            p (2-tuple): The point to move to.
+
+        Returns:
+            Path: Fluent return of the Path object
+        """
         return self.point(p).token('m')
     def line(self,p):
+        """Draw a straight line segment.
+
+        Args:
+            p (2-tuple): The point to move to.
+
+        Returns:
+            Path: Fluent return of the Path object
+        """
         return self.point(p).token('l')
 
 
     def ellipse(self,M):
+        """Draw an ellipse.
+
+        Args:
+            M (Matrix): The matrix that transforms a unit circle to the desired ellipse.
+
+        Returns:
+            Path: Fluent return of the Path object.
+        """
         return self.token(M.tostring()).token('e')
 
-    def arc_cw_fromto(self, center, a, b):
-        dx = center[0]-a[0]
-        dy = center[1]-a[1]
-        radius = sqrt(dx*dx+dy*dy)
-        return self.move(a).token(Matrix(radius,0,0,-radius,center[0],center[1])).point(b).token('a')
-    def arc_ccw_fromto(self, center, a, b):
-        dx = center[0]-a[0]
-        dy = center[1]-a[1]
-        radius = sqrt(dx*dx+dy*dy)
-        return self.move(a).token(Matrix(radius,0,0,radius,center[0],center[1])).point(b).token('a')
+    def arc_fromto(self, center, p, q, cw=False):
+        """Draw a circular arc from point a to point b, where center is the midpoint of the circle.
 
-    def close_spline(self,p):
+        Args:
+            center (2-tuple): midpoint of the circle
+            p (2-tuple): first point
+            q (2-typle): second point
+            cw (bool, optional): Does the arc go clockwise? Counterclockwise if False. Defaults to False.
+
+        Returns:
+            Path: Fluent return of the path object
+        """
+        dx = center[0]-q[0]
+        dy = center[1]-q[1]
+        radius = sqrt(dx*dx+dy*dy)
+        return self.move(p).token(Matrix(radius,0,0,-radius if cw else radius,center[0],center[1])).point(q).token('a')
+
+    def arc_to(self, center, p, cw=False):
+        """Draw a circular arc from the current point to p, where center is the midpoint of the circle.
+
+        Args:
+            center (2-tuple): midpoint of the circle
+            p (2-tuple): point
+            cw (bool, optional): Does the arc go clockwise? Counterclockwise if False. Defaults to False.
+
+        Returns:
+            Path: Fluent return of the path object
+        """
+        dx = center[0]-p[0]
+        dy = center[1]-p[1]
+        radius = sqrt(dx*dx+dy*dy)
+        return self.token(Matrix(radius,0,0,-radius if cw else radius,center[0],center[1])).point(p).token('a')
+
+    def close_spline(self):
+        """Close a spline; should be preceded by a sequence of point calls for the control points.
+
+        Returns:
+            Path: Fluent return of the Path object.
+        """
         return self.token('c')
     def close(self):
+        """Close the path.
+
+        Returns:
+            Path: Fluent return of the Path object.
+        """
         return self.token('h')
 
 
